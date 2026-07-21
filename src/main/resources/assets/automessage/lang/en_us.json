@@ -1,0 +1,18 @@
+{
+  "key.automessage.open": "Open Auto Message settings",
+  "category.automessage": "Auto Message",
+  "screen.automessage.title": "Auto Message Settings",
+  "screen.automessage.message": "Text:",
+  "screen.automessage.interval": "Seconds:",
+  "screen.automessage.seconds_hint": "seconds (1-86400)",
+  "screen.automessage.save": "Save",
+  "screen.automessage.start": "Start",
+  "screen.automessage.stop": "Stop",
+  "screen.automessage.send_now": "Send Now",
+  "screen.automessage.saved": "Settings saved",
+  "screen.automessage.started": "Auto sending started",
+  "screen.automessage.stopped": "Auto sending stopped",
+  "screen.automessage.invalid": "Enter a message and an interval from 1 to 86400 seconds",
+  "screen.automessage.status.running": "Status: running, next send in about %s seconds",
+  "screen.automessage.status.stopped": "Status: stopped; click Start"
+}

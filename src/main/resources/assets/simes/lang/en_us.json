@@ -1,0 +1,7 @@
+{
+  "category.simes": "Simes",
+  "key.simes.copy_sell": "Copy lowest sell coordinates",
+  "key.simes.copy_buy": "Copy highest buy coordinates",
+  "key.simes.arcane_hud": "Open arcane cooldown HUD settings",
+  "key.simes.toggle_value_panel": "Toggle inventory/container value panel"
+}

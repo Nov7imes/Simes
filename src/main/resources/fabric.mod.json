@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "id": "simes",
+  "version": "${version}",
+  "name": "Simes",
+  "description": "An Integrated Mod Enhancement Suite developed for SimMC.",
+  "authors": [
+    "7imes"
+  ],
+  "contact": {
+    "homepage": "https://github.com/Nov7imes/Simes"
+  },
+  "license": "MIT",
+  "icon": "assets/simes/icon.png",
+  "environment": "client",
+  "entrypoints": {
+    "client": [
+      "cn.simmc.simpricedisplay.SimesClient",
+      "cn.ni.automessage.AutoMessageClient"
+    ]
+  },
+  "mixins": [
+    "simes.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=0.17.2",
+    "minecraft": "=1.21.8",
+    "java": ">=21",
+    "fabric-api": "*"
+  },
+  "breaks": {
+    "automessage": "*",
+    "simpricedisplay": "*"
+  }
+}
