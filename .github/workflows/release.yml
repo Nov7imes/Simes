@@ -49,12 +49,13 @@ jobs:
              "release/Simes-${GITHUB_REF_NAME#v}-mc1.21.8.jar"
           cp "build/libs/Simes-${GITHUB_REF_NAME#v}-sources.jar" \
              "release/Simes-${GITHUB_REF_NAME#v}-mc1.21.8-sources.jar"
-          cp README.md CHANGELOG.md LICENSE "Simes-开发更新日志.md" release/
+          cp README.md CHANGELOG.md LICENSE release/
+          cp "Simes-开发更新日志.md" "release/Simes-development-changelog.md"
 
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          name: "Simes ${GITHUB_REF_NAME#v}"
+          name: "Simes ${{ github.ref_name }}"
           body_path: CHANGELOG.md
           files: release/*
           fail_on_unmatched_files: true
