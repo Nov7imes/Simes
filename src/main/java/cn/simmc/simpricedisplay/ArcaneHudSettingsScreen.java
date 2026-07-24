@@ -1,7 +1,5 @@
 package cn.simmc.simpricedisplay;
 
-import cn.ni.automessage.AutoMessageClient;
-import cn.ni.automessage.AutoMessageScreen;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.ButtonWidget;
@@ -64,8 +62,8 @@ public final class ArcaneHudSettingsScreen extends Screen {
 			config.save();
 			button.setMessage(modeText());
 		}).dimensions(right, top + 72, 200, 20).build());
-		addToggle(left, top + 96, "自动消息运行", AutoMessageClient::isEnabled,
-				() -> AutoMessageClient.setEnabled(!AutoMessageClient.isEnabled()));
+		addToggle(left, top + 96, "自动消息运行", AutoMessageModule::isEnabled,
+				() -> AutoMessageModule.setEnabled(!AutoMessageModule.isEnabled()));
 		addToggle(left, top + 120, "法杖魔力 HUD", () -> ArcaneCooldownHud.config().manaHudEnabled, () -> {
 			ArcaneCooldownHud.config().manaHudEnabled = !ArcaneCooldownHud.config().manaHudEnabled;
 			ArcaneCooldownHud.config().save();

@@ -1,4 +1,4 @@
-package cn.ni.automessage;
+package cn.simmc.simpricedisplay;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -20,7 +20,6 @@ public final class AutoMessageConfig {
 	public String message = "这是一条自动消息";
 	public int intervalSeconds = 60;
 	public boolean enabled;
-	public long nextSendAtEpochMillis;
 
 	public static AutoMessageConfig load() {
 		Path source = Files.exists(PATH) ? PATH : LEGACY_PATH;
@@ -41,7 +40,7 @@ public final class AutoMessageConfig {
 			if (!source.equals(PATH)) config.save();
 			return config;
 		} catch (Exception exception) {
-			AutoMessageClient.LOGGER.error("读取配置失败，将使用默认配置", exception);
+			SimesClient.LOGGER.error("读取自动消息配置失败，将使用默认配置", exception);
 			return new AutoMessageConfig();
 		}
 	}
@@ -53,7 +52,7 @@ public final class AutoMessageConfig {
 				GSON.toJson(this, writer);
 			}
 		} catch (IOException exception) {
-			AutoMessageClient.LOGGER.error("保存配置失败", exception);
+			SimesClient.LOGGER.error("保存自动消息配置失败", exception);
 		}
 	}
 }

@@ -10,13 +10,12 @@
   "contact": {
     "homepage": "https://github.com/Nov7imes/Simes"
   },
-  "license": "LicenseRef-Simes-Source-Available-1.0",
+  "license": "LicenseRef-7imes-Source-Available-1.0",
   "icon": "assets/simes/icon.png",
   "environment": "client",
   "entrypoints": {
     "client": [
-      "cn.simmc.simpricedisplay.SimesClient",
-      "cn.ni.automessage.AutoMessageClient"
+      "cn.simmc.simpricedisplay.SimesClient"
     ]
   },
   "mixins": [

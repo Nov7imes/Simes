@@ -1,4 +1,4 @@
-package cn.ni.automessage;
+package cn.simmc.simpricedisplay;
 
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
@@ -32,13 +32,13 @@ public final class AutoMessageScreen extends Screen {
 		messageField = new TextFieldWidget(textRenderer, left + labelWidth, top + 35,
 				panelWidth - labelWidth, 20, Text.translatable("screen.automessage.message"));
 		messageField.setMaxLength(256);
-		messageField.setText(AutoMessageClient.config().message);
+		messageField.setText(AutoMessageModule.config().message);
 		addDrawableChild(messageField);
 
 		intervalField = new TextFieldWidget(textRenderer, left + labelWidth, top + 80,
 				110, 20, Text.translatable("screen.automessage.interval"));
 		intervalField.setMaxLength(5);
-		intervalField.setText(Integer.toString(AutoMessageClient.config().intervalSeconds));
+		intervalField.setText(Integer.toString(AutoMessageModule.config().intervalSeconds));
 		intervalField.setTextPredicate(value -> value.isEmpty() || value.chars().allMatch(Character::isDigit));
 		addDrawableChild(intervalField);
 
@@ -62,7 +62,7 @@ public final class AutoMessageScreen extends Screen {
 			noticeColor = 0xFFFF5555;
 			return false;
 		}
-		AutoMessageClient.saveSettings(message, interval);
+		AutoMessageModule.saveSettings(message, interval);
 		notice = Text.translatable("screen.automessage.saved");
 		noticeColor = 0xFF55FF55;
 		return true;
@@ -78,11 +78,11 @@ public final class AutoMessageScreen extends Screen {
 				left, top + 41, 0xFFFFFFFF);
 		context.drawTextWithShadow(textRenderer, Text.translatable("screen.automessage.interval"),
 				left, top + 86, 0xFFFFFFFF);
-		Text status = AutoMessageClient.isEnabled()
-				? Text.translatable("screen.automessage.status.running", AutoMessageClient.secondsUntilNextSend())
+		Text status = AutoMessageModule.isEnabled()
+				? Text.translatable("screen.automessage.status.running", AutoMessageModule.secondsUntilNextSend())
 				: Text.translatable("screen.automessage.status.stopped");
 		context.drawCenteredTextWithShadow(textRenderer, status, width / 2, top + 106,
-				AutoMessageClient.isEnabled() ? 0xFF55FF55 : 0xFFFF5555);
+				AutoMessageModule.isEnabled() ? 0xFF55FF55 : 0xFFFF5555);
 		context.drawCenteredTextWithShadow(textRenderer, notice, width / 2, top + 150, noticeColor);
 		super.render(context, mouseX, mouseY, delta);
 	}

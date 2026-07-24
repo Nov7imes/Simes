@@ -4,5 +4,12 @@
   "key.simes.copy_buy": "复制最高收购坐标",
   "key.simes.settings": "打开 Simes 设置",
   "key.simes.market_details": "打开/关闭市场详情",
-  "key.simes.toggle_value_panel": "开关背包/仓库价值显示"
+  "key.simes.toggle_value_panel": "开关背包/仓库价值显示",
+  "screen.automessage.title": "自动消息设置",
+  "screen.automessage.message": "文本：",
+  "screen.automessage.interval": "秒数：",
+  "screen.automessage.saved": "设置已保存",
+  "screen.automessage.invalid": "请输入消息，并将间隔设为 1～86400 秒",
+  "screen.automessage.status.running": "状态：运行中，下次发送约 %s 秒后",
+  "screen.automessage.status.stopped": "状态：已停止"
 }

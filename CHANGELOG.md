@@ -22,7 +22,7 @@
 
 ### Changed
 
-- 项目许可由 MIT 调整为 Simes Source-Available License 1.0；内置 AutoMessage 的 CC0-1.0 许可保持不变。
+- 项目许可调整为可供 7imes 其他项目复用的 7imes Source-Available License 1.0。
 
 ### Compatibility
 

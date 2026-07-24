@@ -1,9 +1,6 @@
-package cn.ni.automessage;
+package cn.simmc.simpricedisplay;
 
-import cn.simmc.simpricedisplay.ArcaneCooldownHud;
-import cn.simmc.simpricedisplay.ArcaneHudConfig;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
-import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
@@ -13,37 +10,40 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import static net.fabricmc.fabric.api.client.command.v2.ClientCommandManager.literal;
 
-public final class AutoMessageClient implements ClientModInitializer {
-	public static final Logger LOGGER = LoggerFactory.getLogger("Simes/AutoMessage");
+public final class AutoMessageModule {
 	private static final int HUD_HEIGHT = 14;
+	private static boolean registered;
 	private static AutoMessageConfig config;
+	private static long nextSendAtNanos;
 
-	@Override
-	public void onInitializeClient() {
+	private AutoMessageModule() {
+	}
+
+	public static void register() {
+		if (registered) return;
+		registered = true;
 		config = AutoMessageConfig.load();
-		if (config.enabled) scheduleNext();
 		registerCommands();
 		ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> {
 			if (config.enabled) scheduleNext();
 		});
+		ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> nextSendAtNanos = 0L);
 		ClientTickEvents.END_CLIENT_TICK.register(client -> {
 			if (!config.enabled || client.player == null || client.getNetworkHandler() == null) return;
-			if (config.nextSendAtEpochMillis <= 0L) {
+			if (nextSendAtNanos <= 0L) {
 				scheduleNext();
 				return;
 			}
-			if (System.currentTimeMillis() >= config.nextSendAtEpochMillis) {
+			if (System.nanoTime() >= nextSendAtNanos) {
 				send(client);
 				scheduleNext();
 			}
 		});
 		HudElementRegistry.attachElementAfter(VanillaHudElements.INFO_BAR,
-				Identifier.of("simes", "automessage_countdown"), AutoMessageClient::renderCountdownHud);
+				Identifier.of(SimesClient.MOD_ID, "automessage_countdown"), AutoMessageModule::renderCountdownHud);
 	}
 
 	private static void registerCommands() {
@@ -134,8 +134,7 @@ public final class AutoMessageClient implements ClientModInitializer {
 	}
 
 	private static void scheduleNext() {
-		config.nextSendAtEpochMillis = System.currentTimeMillis() + config.intervalSeconds * 1000L;
-		config.save();
+		nextSendAtNanos = System.nanoTime() + config.intervalSeconds * 1_000_000_000L;
 	}
 
 	public static AutoMessageConfig config() { return config; }
@@ -143,26 +142,27 @@ public final class AutoMessageClient implements ClientModInitializer {
 	public static void saveSettings(String message, int intervalSeconds) {
 		config.message = message;
 		config.intervalSeconds = intervalSeconds;
-		if (config.enabled) scheduleNext(); else config.save();
+		config.save();
+		if (config.enabled) scheduleNext();
 	}
 
 	public static void setEnabled(boolean enabled) {
 		config.enabled = enabled;
 		if (enabled) {
 			scheduleNext();
-			LOGGER.info("Automatic messaging enabled; next send in {} seconds", config.intervalSeconds);
+			SimesClient.LOGGER.info("Automatic messaging enabled; next send in {} seconds", config.intervalSeconds);
 		} else {
-			config.nextSendAtEpochMillis = 0L;
-			config.save();
-			LOGGER.info("Automatic messaging disabled");
+			nextSendAtNanos = 0L;
+			SimesClient.LOGGER.info("Automatic messaging disabled");
 		}
+		config.save();
 	}
 
 	public static boolean isEnabled() { return config != null && config.enabled; }
 
 	public static long secondsUntilNextSend() {
-		if (config == null || config.nextSendAtEpochMillis <= 0L) return config == null ? 0 : config.intervalSeconds;
-		long remaining = Math.max(0L, config.nextSendAtEpochMillis - System.currentTimeMillis());
-		return Math.max(1L, (remaining + 999L) / 1000L);
+		if (config == null || nextSendAtNanos <= 0L) return config == null ? 0 : config.intervalSeconds;
+		long remaining = Math.max(0L, nextSendAtNanos - System.nanoTime());
+		return Math.max(1L, (remaining + 999_999_999L) / 1_000_000_000L);
 	}
 }

@@ -1,6 +1,5 @@
 package cn.simmc.simpricedisplay;
 
-import cn.ni.automessage.AutoMessageClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.ButtonWidget;
@@ -172,12 +171,12 @@ public final class HudLayoutScreen extends Screen {
 	}
 
 	private void drawAutoMessage(DrawContext context) {
-		int x = AutoMessageClient.configuredX(width);
-		int y = AutoMessageClient.configuredY(height);
+		int x = AutoMessageModule.configuredX(width);
+		int y = AutoMessageModule.configuredY(height);
 		float scale = ArcaneCooldownHud.config().autoMessageScalePercent / 100.0f;
-		AutoMessageClient.renderPreview(context, x, y, scale);
-		int w = Math.round(AutoMessageClient.previewWidth() * scale);
-		int h = Math.round(AutoMessageClient.previewHeight() * scale);
+		AutoMessageModule.renderPreview(context, x, y, scale);
+		int w = Math.round(AutoMessageModule.previewWidth() * scale);
+		int h = Math.round(AutoMessageModule.previewHeight() * scale);
 		context.drawBorder(x - 3, y - 3, w + 6, h + 6, selected == Target.AUTO_MESSAGE ? 0xFFFFFF55 : 0xFF777777);
 		context.drawTextWithShadow(textRenderer, "自动消息 " + ArcaneCooldownHud.config().autoMessageScalePercent + "%", x, Math.max(22, y - 14), 0xFFFFFFFF);
 	}
@@ -246,10 +245,10 @@ public final class HudLayoutScreen extends Screen {
 			return true;
 		}
 		float autoScale = ArcaneCooldownHud.config().autoMessageScalePercent / 100.0f;
-		int autoX = AutoMessageClient.configuredX(width);
-		int autoY = AutoMessageClient.configuredY(height);
-		int autoWidth = Math.round(AutoMessageClient.previewWidth() * autoScale);
-		int autoHeight = Math.round(AutoMessageClient.previewHeight() * autoScale);
+		int autoX = AutoMessageModule.configuredX(width);
+		int autoY = AutoMessageModule.configuredY(height);
+		int autoWidth = Math.round(AutoMessageModule.previewWidth() * autoScale);
+		int autoHeight = Math.round(AutoMessageModule.previewHeight() * autoScale);
 		if (inside(mx, my, autoX, autoY, autoWidth, autoHeight)) {
 			selectTarget(Target.AUTO_MESSAGE);
 			return true;
@@ -293,7 +292,7 @@ public final class HudLayoutScreen extends Screen {
 			config.globalCooldownX = x / width; config.globalCooldownY = y / height;
 		} else if (selected == Target.AUTO_MESSAGE) {
 			float scale = config.autoMessageScalePercent / 100.0f;
-			int w = Math.round(AutoMessageClient.previewWidth() * scale), h = Math.round(AutoMessageClient.previewHeight() * scale);
+			int w = Math.round(AutoMessageModule.previewWidth() * scale), h = Math.round(AutoMessageModule.previewHeight() * scale);
 			double x = clamp(mouseX - offsetX, 2, width - w - 2);
 			double y = clamp(mouseY - offsetY, 22, height - h - 35);
 			config.autoMessageX = x / width; config.autoMessageY = y / height;
@@ -366,7 +365,7 @@ public final class HudLayoutScreen extends Screen {
 			case ARCANE_STATUS -> ArcaneStatusHud.configuredX(width);
 			case GLOBAL_COOLDOWN -> ArcaneStatusHud.configuredGlobalX(width);
 			case MANA -> ManaHud.configuredX(width);
-			case AUTO_MESSAGE -> AutoMessageClient.configuredX(width);
+			case AUTO_MESSAGE -> AutoMessageModule.configuredX(width);
 			case INVENTORY_VALUE -> ValuePanelRenderer.configuredPreviewX(width);
 			case WAREHOUSE_VALUE -> ValuePanelRenderer.configuredContainerPreviewX(width);
 		};
@@ -377,7 +376,7 @@ public final class HudLayoutScreen extends Screen {
 			case ARCANE_STATUS -> ArcaneStatusHud.configuredY(height);
 			case GLOBAL_COOLDOWN -> ArcaneStatusHud.configuredGlobalY(height);
 			case MANA -> ManaHud.configuredY(height);
-			case AUTO_MESSAGE -> AutoMessageClient.configuredY(height);
+			case AUTO_MESSAGE -> AutoMessageModule.configuredY(height);
 			case INVENTORY_VALUE -> ValuePanelRenderer.configuredPreviewY(height);
 			case WAREHOUSE_VALUE -> ValuePanelRenderer.configuredContainerPreviewY(height);
 		};

@@ -27,6 +27,7 @@ public final class SimesClient implements ClientModInitializer {
 		ManaHud.register();
 		ArcaneCooldownHud.register();
 		ArcaneStatusHud.register();
+		AutoMessageModule.register();
 		CookwareAssistant.register();
 		for (String warning : SimesDiagnostics.compatibilityWarnings()) {
 			LOGGER.warn("Compatibility check: {}", warning);

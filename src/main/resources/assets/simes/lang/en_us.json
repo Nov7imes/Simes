@@ -4,5 +4,12 @@
   "key.simes.copy_buy": "Copy highest buy coordinates",
   "key.simes.settings": "Open Simes settings",
   "key.simes.market_details": "Open/close market details",
-  "key.simes.toggle_value_panel": "Toggle inventory/container value panel"
+  "key.simes.toggle_value_panel": "Toggle inventory/container value panel",
+  "screen.automessage.title": "Auto Message Settings",
+  "screen.automessage.message": "Text:",
+  "screen.automessage.interval": "Seconds:",
+  "screen.automessage.saved": "Settings saved",
+  "screen.automessage.invalid": "Enter a message and an interval from 1 to 86400 seconds",
+  "screen.automessage.status.running": "Status: running, next send in about %s seconds",
+  "screen.automessage.status.stopped": "Status: stopped"
 }

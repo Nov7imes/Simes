@@ -111,8 +111,8 @@ gradlew.bat clean build
 
 ## 作者与许可
 
-- Simes / AutoMessage 作者：7imes
-- Simes：Simes Source-Available License 1.0（源码可查看，但未经书面许可不得二次分发、改作发布或商业使用）
-- 内置 AutoMessage 部分：CC0-1.0（许可证作为 `LICENSE_automessage` 保留在 JAR 中）
+- 作者：7imes
+- 本项目使用 `7imes Source-Available License 1.0`：源码可查看，但未经书面许可不得二次分发、改作发布或商业使用。
+- AutoMessage 已作为 Simes 内部模块统一维护，不再作为独立入口或独立许可组件发布。历史版本已授予的许可权利不受影响。
 - 奥术图标等随包美术素材已取得再分发授权。
 - 完整开发记录见发布包附带的 `Simes-开发更新日志.md`。
