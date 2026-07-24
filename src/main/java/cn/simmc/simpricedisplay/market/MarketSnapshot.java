@@ -6,6 +6,8 @@ import cn.simmc.simpricedisplay.market.MarketModels.MarketMatch;
 import java.time.Instant;
 import java.util.Map;
 import java.util.Optional;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
 public final class MarketSnapshot {
@@ -14,6 +16,7 @@ public final class MarketSnapshot {
 	private final Map<String, ItemMarketData> itemsByNormalizedName;
 	private final Instant dataUpdatedAt;
 	private final int shopRecordCount;
+	private final List<PortAnchor> portAnchors;
 	private final ConcurrentHashMap<String, Optional<MarketMatch>> matchCache = new ConcurrentHashMap<>();
 
 	public MarketSnapshot(
@@ -24,6 +27,7 @@ public final class MarketSnapshot {
 		this.itemsByNormalizedName = Map.copyOf(itemsByNormalizedName);
 		this.dataUpdatedAt = dataUpdatedAt;
 		this.shopRecordCount = shopRecordCount;
+		this.portAnchors = collectPortAnchors(this.itemsByNormalizedName);
 	}
 
 	public static MarketSnapshot empty() {
@@ -45,6 +49,28 @@ public final class MarketSnapshot {
 	public Instant dataUpdatedAt() {
 		return dataUpdatedAt;
 	}
+
+	List<PortAnchor> portAnchors() {
+		return portAnchors;
+	}
+
+	private static List<PortAnchor> collectPortAnchors(Map<String, ItemMarketData> items) {
+		List<PortAnchor> anchors = new ArrayList<>();
+		for (ItemMarketData data : items.values()) {
+			addAnchor(anchors, data.lowestSell());
+			addAnchor(anchors, data.highestBuy());
+		}
+		return List.copyOf(anchors);
+	}
+
+	private static void addAnchor(List<PortAnchor> anchors, MarketModels.Offer offer) {
+		if (offer == null || !Double.isFinite(offer.x()) || !Double.isFinite(offer.z())) return;
+		String port = offer.port() == null ? "" : offer.port().strip();
+		if (port.isEmpty() || "未知".equals(port)) return;
+		anchors.add(new PortAnchor(offer.x(), offer.z(), port));
+	}
+
+	record PortAnchor(double x, double z, String port) {}
 
 	public Optional<MarketMatch> find(String visibleName) {
 		String normalizedName = ItemNameNormalizer.normalize(visibleName);

@@ -10,7 +10,7 @@
   "contact": {
     "homepage": "https://github.com/Nov7imes/Simes"
   },
-  "license": "MIT",
+  "license": "LicenseRef-Simes-Source-Available-1.0",
   "icon": "assets/simes/icon.png",
   "environment": "client",
   "entrypoints": {

@@ -6,16 +6,13 @@ import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
-import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.option.KeyBinding;
-import net.minecraft.client.util.InputUtil;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
-import org.lwjgl.glfw.GLFW;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,18 +22,16 @@ public final class AutoMessageClient implements ClientModInitializer {
 	public static final Logger LOGGER = LoggerFactory.getLogger("Simes/AutoMessage");
 	private static final int HUD_HEIGHT = 14;
 	private static AutoMessageConfig config;
-	private static KeyBinding openScreenKey;
 
 	@Override
 	public void onInitializeClient() {
 		config = AutoMessageConfig.load();
-		if (config.enabled && config.nextSendAtEpochMillis <= 0L) scheduleNext();
+		if (config.enabled) scheduleNext();
 		registerCommands();
-		openScreenKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
-				"key.automessage.open", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_O, "category.automessage"));
-
+		ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> {
+			if (config.enabled) scheduleNext();
+		});
 		ClientTickEvents.END_CLIENT_TICK.register(client -> {
-			while (openScreenKey.wasPressed()) openSettings();
 			if (!config.enabled || client.player == null || client.getNetworkHandler() == null) return;
 			if (config.nextSendAtEpochMillis <= 0L) {
 				scheduleNext();

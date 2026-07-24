@@ -6,7 +6,10 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 final class ArcaneCooldownParser {
-	private static final Pattern COOLDOWN = Pattern.compile("(?:^|\\|)\\s*([^|]+?)冷却剩余：([0-9]+(?:\\.[0-9]+)?)s");
+	private static final Pattern COOLDOWN = Pattern.compile(
+			"(?:^|[|｜])\\s*([^|｜]{1,32}?)\\s*冷却\\s*剩余\\s*[:：]\\s*"
+					+ "([0-9]+(?:\\.[0-9]+)?)\\s*(?:[sS]|秒)"
+	);
 
 	private ArcaneCooldownParser() {}
 
@@ -20,7 +23,7 @@ final class ArcaneCooldownParser {
 			end = matcher.end();
 		}
 		String residual = values.isEmpty() ? raw : raw.substring(Math.min(end, raw.length())).trim();
-		while (residual.startsWith("|")) residual = residual.substring(1).trim();
+		while (residual.startsWith("|") || residual.startsWith("｜")) residual = residual.substring(1).trim();
 		return new Result(List.copyOf(values), residual);
 	}
 

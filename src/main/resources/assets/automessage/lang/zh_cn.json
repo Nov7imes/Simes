@@ -1,6 +1,4 @@
 {
-  "key.automessage.open": "打开自动消息设置",
-  "category.automessage": "自动消息",
   "screen.automessage.title": "自动消息设置",
   "screen.automessage.message": "文本：",
   "screen.automessage.interval": "秒数：",

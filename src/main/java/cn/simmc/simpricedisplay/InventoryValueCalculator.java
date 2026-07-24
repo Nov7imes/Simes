@@ -1,8 +1,6 @@
 package cn.simmc.simpricedisplay;
 
 import cn.simmc.simpricedisplay.market.MarketDataManager;
-import cn.simmc.simpricedisplay.market.MarketModels.MarketMatch;
-import cn.simmc.simpricedisplay.market.MarketModels.Offer;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.screen.ScreenHandler;
@@ -50,13 +48,12 @@ public final class InventoryValueCalculator {
 			}
 			occupiedSlots++;
 			String visibleName = Formatting.strip(stack.getName().getString());
-			MarketMatch match = visibleName == null ? null : dataManager.find(visibleName).orElse(null);
-			Offer buy = match == null ? null : match.data().highestBuy();
-			if (buy == null || !Double.isFinite(buy.price()) || buy.price() <= 0) {
+			Double estimatedPrice = visibleName == null ? null : dataManager.estimatedBuyPrice(visibleName).orElse(null);
+			if (estimatedPrice == null || !Double.isFinite(estimatedPrice) || estimatedPrice <= 0) {
 				unvaluedSlots++;
 				continue;
 			}
-			total += buy.price() * stack.getCount();
+			total += estimatedPrice * stack.getCount();
 			valuedSlots++;
 		}
 		return new ValueSummary(total, occupiedSlots, valuedSlots, unvaluedSlots);

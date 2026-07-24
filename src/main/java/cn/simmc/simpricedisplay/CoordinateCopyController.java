@@ -43,6 +43,9 @@ public final class CoordinateCopyController {
 		return copyBuyKey == null ? Text.literal("V") : copyBuyKey.getBoundKeyLocalizedText();
 	}
 
+	public static KeyBinding sellKeyBinding() { return copySellKey; }
+	public static KeyBinding buyKeyBinding() { return copyBuyKey; }
+
 	public static boolean handleKey(Slot hoveredSlot, int keyCode, int scanCode) {
 		if (copySellKey != null && copySellKey.matchesKey(keyCode, scanCode)) {
 			return copyOffer(hoveredSlot, true);
@@ -51,6 +54,27 @@ public final class CoordinateCopyController {
 			return copyOffer(hoveredSlot, false);
 		}
 		return false;
+	}
+
+	public static boolean matchesSellKey(int keyCode, int scanCode) {
+		return copySellKey != null && copySellKey.matchesKey(keyCode, scanCode);
+	}
+
+	public static boolean matchesBuyKey(int keyCode, int scanCode) {
+		return copyBuyKey != null && copyBuyKey.matchesKey(keyCode, scanCode);
+	}
+
+	public static boolean copyDetailedOffer(cn.simmc.simpricedisplay.market.MarketDetails.DetailedOffer offer) {
+		if (offer == null || !offer.hasCoordinates()) {
+			notifyPlayer(Text.literal("该报价暂无坐标数据").formatted(Formatting.YELLOW));
+			return true;
+		}
+		String x = formatCoordinate(offer.x());
+		String z = formatCoordinate(offer.z());
+		MinecraftClient.getInstance().keyboard.setClipboard(x + " " + z);
+		notifyPlayer(Text.literal("已复制" + (offer.side() == cn.simmc.simpricedisplay.market.MarketDetails.Side.SELL ? "出售" : "收购")
+				+ "坐标：X " + x + "，Z " + z).formatted(Formatting.GREEN));
+		return true;
 	}
 
 	public static boolean handleMouse(Slot hoveredSlot, int button) {
@@ -64,6 +88,7 @@ public final class CoordinateCopyController {
 	}
 
 	private static boolean copyOffer(Slot hoveredSlot, boolean sell) {
+		if (!SimesConfig.get().coordinateCopyEnabled) return false;
 		if (hoveredSlot == null || !hoveredSlot.hasStack() || dataManager == null
 				|| !dataManager.isActiveOnTargetServer()) {
 			return false;

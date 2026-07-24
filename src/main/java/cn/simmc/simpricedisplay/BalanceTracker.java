@@ -39,10 +39,11 @@ public final class BalanceTracker {
 		automaticQueryPending = false;
 		nextQueryAt = targetServer ? System.currentTimeMillis() + FIRST_QUERY_MS : 0L;
 		if (targetServer) {
-			// Each login establishes a fresh earning baseline from its first valid reply.
-			// Do not compare a new session against a stale same-day balance.
+			// The current value belongs to the previous connection. Keep only a valid
+			// same-day baseline so reconnecting cannot reset or corrupt daily earnings.
 			current = null;
-			baseline = null;
+			baseline = BalanceLedger.savedBaseline(LocalDate.now(),
+					SimesConfig.get().balanceDate, SimesConfig.get().balanceBaseline);
 		}
 	}
 
@@ -53,7 +54,7 @@ public final class BalanceTracker {
 	}
 
 	private static void tick(MinecraftClient client) {
-		if (!active || client.player == null || client.getNetworkHandler() == null) return;
+		if (!SimesConfig.get().balanceTrackingEnabled || !active || client.player == null || client.getNetworkHandler() == null) return;
 		long now = System.currentTimeMillis();
 		if (automaticQueryPending && now > pendingUntil) automaticQueryPending = false;
 		if (nextQueryAt != 0L && now >= nextQueryAt) {
@@ -65,7 +66,7 @@ public final class BalanceTracker {
 	}
 
 	private static boolean handleMessage(Text message, boolean overlay) {
-		if (!active || overlay) return true;
+		if (!SimesConfig.get().balanceTrackingEnabled || !active || overlay) return true;
 		Matcher matcher = BALANCE.matcher(message.getString());
 		if (!matcher.find()) return true;
 		try {
@@ -105,7 +106,7 @@ public final class BalanceTracker {
 		}
 	}
 
-	public static boolean hasBalance() { return current != null; }
+	public static boolean hasBalance() { return SimesConfig.get().balanceTrackingEnabled && current != null; }
 	public static String currentText() { return current == null ? "--" : format(current); }
 	public static String todayChangeText() {
 		if (current == null || baseline == null) return "--";

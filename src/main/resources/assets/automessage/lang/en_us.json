@@ -1,6 +1,4 @@
 {
-  "key.automessage.open": "Open Auto Message settings",
-  "category.automessage": "Auto Message",
   "screen.automessage.title": "Auto Message Settings",
   "screen.automessage.message": "Text:",
   "screen.automessage.interval": "Seconds:",

@@ -1,0 +1,61 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Make Gradle wrapper executable
+        run: chmod +x gradlew
+
+      - name: Validate tag and project version
+        shell: bash
+        run: |
+          project_version="$(sed -n 's/^mod_version=//p' gradle.properties)"
+          tag_version="${GITHUB_REF_NAME#v}"
+          if [[ "$project_version" != "$tag_version" ]]; then
+            echo "Tag $GITHUB_REF_NAME does not match mod_version=$project_version"
+            exit 1
+          fi
+
+      - name: Build and test
+        run: ./gradlew clean build --no-daemon
+
+      - name: Prepare release files
+        shell: bash
+        run: |
+          mkdir -p release
+          cp "build/libs/Simes-${GITHUB_REF_NAME#v}.jar" \
+             "release/Simes-${GITHUB_REF_NAME#v}-mc1.21.8.jar"
+          cp "build/libs/Simes-${GITHUB_REF_NAME#v}-sources.jar" \
+             "release/Simes-${GITHUB_REF_NAME#v}-mc1.21.8-sources.jar"
+          cp README.md CHANGELOG.md LICENSE "Simes-开发更新日志.md" release/
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: "Simes ${GITHUB_REF_NAME#v}"
+          body_path: CHANGELOG.md
+          files: release/*
+          fail_on_unmatched_files: true
+          prerelease: ${{ contains(github.ref_name, '-alpha') || contains(github.ref_name, '-beta') || contains(github.ref_name, '-rc') || contains(github.ref_name, '-dev') }}

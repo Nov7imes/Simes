@@ -3,6 +3,7 @@ package cn.simmc.simpricedisplay.mixin;
 import cn.simmc.simpricedisplay.CoordinateCopyController;
 import cn.simmc.simpricedisplay.ValuePanelController;
 import cn.simmc.simpricedisplay.ValuePanelRenderer;
+import cn.simmc.simpricedisplay.MarketDetailsController;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.client.gui.widget.TextFieldWidget;
@@ -19,7 +20,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public abstract class HandledScreenMixin {
 	@Shadow @Nullable protected Slot focusedSlot;
 
-	@Inject(method = "drawMouseoverTooltip", at = @At("HEAD"))
+	@Inject(method = "drawMouseoverTooltip", at = @At("HEAD"), cancellable = true)
 	private void simes$renderValuePanelBelowTooltip(
 			DrawContext context,
 			int mouseX,
@@ -31,6 +32,12 @@ public abstract class HandledScreenMixin {
 		ValuePanelRenderer.render(screen, context,
 				bounds.simes$getX(), bounds.simes$getY(),
 				bounds.simes$getBackgroundWidth(), bounds.simes$getBackgroundHeight());
+		MarketDetailsController.render(screen, context, mouseX, mouseY);
+		if (MarketDetailsController.isLocked()) {
+			// The locked details panel replaces the vanilla item tooltip (including
+			// Simes' compact tooltip prices), keeping the selected item visually stable.
+			callback.cancel();
+		}
 	}
 	@Inject(method = "keyPressed", at = @At("HEAD"), cancellable = true)
 	private void simes$copyShopCoordinates(
@@ -43,7 +50,8 @@ public abstract class HandledScreenMixin {
 		if (screen.getFocused() instanceof TextFieldWidget) {
 			return;
 		}
-		if (ValuePanelController.handleKey(keyCode, scanCode)
+		if (MarketDetailsController.handleKey(screen, focusedSlot, keyCode, scanCode)
+				|| ValuePanelController.handleKey(keyCode, scanCode)
 				|| CoordinateCopyController.handleKey(focusedSlot, keyCode, scanCode)) {
 			callback.setReturnValue(true);
 		}
@@ -56,7 +64,8 @@ public abstract class HandledScreenMixin {
 			int button,
 			CallbackInfoReturnable<Boolean> callback
 	) {
-		if (ValuePanelController.handleMouse(button)
+		if (MarketDetailsController.handleMouse(mouseX, mouseY, button)
+				|| ValuePanelController.handleMouse(button)
 				|| CoordinateCopyController.handleMouse(focusedSlot, button)) {
 			callback.setReturnValue(true);
 		}

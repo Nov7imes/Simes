@@ -50,6 +50,7 @@ public final class ContainerCalculationTracker {
 		ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) ->
 				dispatcher.register(literal("cal").executes(context -> toggleRecording())));
 		UseBlockCallback.EVENT.register((player, world, hand, hitResult) -> {
+			if (!SimesConfig.get().containerCalculationEnabled) return ActionResult.PASS;
 			MinecraftClient client = MinecraftClient.getInstance();
 			if (player == client.player) {
 				ContainerLocation location = resolveChestLocation(world, hitResult.getBlockPos());
@@ -65,6 +66,10 @@ public final class ContainerCalculationTracker {
 
 	private static int toggleRecording() {
 		MinecraftClient client = MinecraftClient.getInstance();
+		if (!SimesConfig.get().containerCalculationEnabled) {
+			localMessage(client, "§e[Simes] 箱子累计估值功能已在设置中关闭");
+			return 0;
+		}
 		if (client.player == null || dataManager == null || !dataManager.isActiveOnTargetServer()) {
 			localMessage(client, "§c[Simes] 仅在 play.simmc.cn 中可使用箱子估值记录");
 			return 0;
@@ -90,6 +95,12 @@ public final class ContainerCalculationTracker {
 	}
 
 	private static void tick(MinecraftClient client) {
+		if (!SimesConfig.get().containerCalculationEnabled) {
+			recording = false;
+			trackedScreen = null;
+			pendingLocation = null;
+			return;
+		}
 		HandledScreen<?> current = client.currentScreen instanceof GenericContainerScreen
 				? (HandledScreen<?>)client.currentScreen
 				: null;

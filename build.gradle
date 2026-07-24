@@ -5,6 +5,8 @@ plugins {
 
 version = project.mod_version
 group = project.maven_group
+def expandedModVersion = version.toString()
+def expandedArchiveName = project.archives_base_name.toString()
 
 base {
 	archivesName = project.archives_base_name
@@ -22,13 +24,14 @@ dependencies {
 
 	testImplementation platform('org.junit:junit-bom:5.11.4')
 	testImplementation 'org.junit.jupiter:junit-jupiter'
+	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
 processResources {
-	inputs.property 'version', project.version
+	inputs.property 'version', expandedModVersion
 
 	filesMatching('fabric.mod.json') {
-		expand 'version': project.version
+		expand 'version': expandedModVersion
 	}
 }
 
@@ -49,8 +52,9 @@ java {
 
 jar {
 	from('LICENSE') {
-		rename { "${it}_${project.base.archivesName.get()}" }
+		rename { "${it}_${expandedArchiveName}" }
 	}
+	from('README.md')
 }
 
 publishing {

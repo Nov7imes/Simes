@@ -7,13 +7,19 @@ import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.text.Text;
 
 public final class AutoMessageScreen extends Screen {
+	private final Screen parent;
 	private TextFieldWidget messageField;
 	private TextFieldWidget intervalField;
 	private Text notice = Text.empty();
 	private int noticeColor = 0xFFFFFFFF;
 
 	public AutoMessageScreen() {
+		this(null);
+	}
+
+	public AutoMessageScreen(Screen parent) {
 		super(Text.translatable("screen.automessage.title"));
+		this.parent = parent;
 	}
 
 	@Override
@@ -79,6 +85,11 @@ public final class AutoMessageScreen extends Screen {
 				AutoMessageClient.isEnabled() ? 0xFF55FF55 : 0xFFFF5555);
 		context.drawCenteredTextWithShadow(textRenderer, notice, width / 2, top + 150, noticeColor);
 		super.render(context, mouseX, mouseY, delta);
+	}
+
+	@Override
+	public void close() {
+		client.setScreen(parent);
 	}
 
 	@Override

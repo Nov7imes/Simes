@@ -56,4 +56,10 @@ public final class ValuePanelController {
 	public static boolean enabled() {
 		return SimesConfig.get().valuePanelEnabled;
 	}
+
+	public static net.minecraft.text.Text boundKeyText() {
+		return toggleKey == null ? net.minecraft.text.Text.literal("未绑定") : toggleKey.getBoundKeyLocalizedText();
+	}
+
+	public static KeyBinding keyBinding() { return toggleKey; }
 }

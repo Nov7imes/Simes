@@ -22,4 +22,30 @@ class ArcaneCooldownParserTest {
 		assertEquals(0, result.values().size());
 		assertEquals("港口：云港", result.residual());
 	}
+
+	@Test
+	void acceptsServerWhitespaceSeenInScreenshot() {
+		var result = ArcaneCooldownParser.parse("腾云术冷却剩余： 3.6s");
+		assertEquals(1, result.values().size());
+		assertEquals("腾云术", result.values().get(0).name());
+		assertEquals(3.6, result.values().get(0).remaining());
+	}
+
+	@Test
+	void acceptsSafeFormattingVariants() {
+		var result = ArcaneCooldownParser.parse(
+				"火球术 冷却 剩余: 2.5 S ｜ 治愈术冷却剩余： 10秒 | 雷击冷却剩余：1.2 s Shift");
+		assertEquals(3, result.values().size());
+		assertEquals("火球术", result.values().get(0).name());
+		assertEquals("治愈术", result.values().get(1).name());
+		assertEquals("雷击", result.values().get(2).name());
+		assertEquals("Shift", result.residual());
+	}
+
+	@Test
+	void stillRejectsSimilarButNonCooldownText() {
+		assertEquals(0, ArcaneCooldownParser.parse("腾云术剩余次数：3").values().size());
+		assertEquals(0, ArcaneCooldownParser.parse("冷却完成：腾云术").values().size());
+		assertEquals(0, ArcaneCooldownParser.parse("余额：3.6s").values().size());
+	}
 }

@@ -11,6 +11,9 @@ import net.minecraft.client.gl.RenderPipelines;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.util.InputUtil;
+import net.minecraft.component.DataComponentTypes;
+import net.minecraft.component.type.LoreComponent;
+import net.minecraft.item.ItemStack;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import org.lwjgl.glfw.GLFW;
@@ -30,6 +33,8 @@ import static net.fabricmc.fabric.api.client.command.v2.ClientCommandManager.lit
 public final class ArcaneCooldownHud {
 	private static final Pattern COMPLETE = Pattern.compile("^(.+?)\\s+冷却完成$");
 	private static final Pattern SHIELD_BAR_PREFIX = Pattern.compile("^\\s*(?:🟥\\s*)+");
+	private static final Pattern ARCANE_INPUT_HINT_ONLY = Pattern.compile("(?i)^\\s*(?:(?:上|下|丌|Shift)\\s*)+$");
+	private static final Pattern ARCANE_INPUT_HINT = Pattern.compile("(?i)(?<!\\S)(?:上|下|丌|Shift)(?!\\S)");
 	private static final int ICON_SLOT = 16;
 	private static final int NAME_WIDTH = 52;
 	private static final int BAR_WIDTH = 88;
@@ -60,20 +65,26 @@ public final class ArcaneCooldownHud {
 			Map.entry("后撤步", icon("20_orange_rune.png"))
 	);
 	private static final Map<String, Cooldown> cooldowns = new LinkedHashMap<>();
+	private static volatile List<String> equippedArcanes = List.of();
 	private static ArcaneHudConfig config;
 	private static KeyBinding settingsKey;
+	private static boolean wandHeld;
+	private static int lastWandComponentsHash;
+	private static int lastWandIdentity;
 
 	private ArcaneCooldownHud() {}
 
 	public static void register() {
 		config = ArcaneHudConfig.load();
 		settingsKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
-				"key.simes.arcane_hud", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_UNKNOWN, "category.simes"));
+				"key.simes.settings", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_O, "category.simes"));
 		ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) ->
 				dispatcher.register(literal("simes").executes(context -> openSettings())
-						.then(literal("hud").executes(context -> openSettings()))));
+						.then(literal("hud").executes(context -> openSettings()))
+						.then(literal("diagnose").executes(context -> SimesDiagnostics.createCommand()))));
 		ClientTickEvents.END_CLIENT_TICK.register(client -> {
 			while (settingsKey.wasPressed()) openSettings();
+			updateEquippedArcanes(client);
 			cleanup();
 		});
 		ClientReceiveMessageEvents.GAME.register((message, overlay) -> {
@@ -86,41 +97,73 @@ public final class ArcaneCooldownHud {
 	}
 
 	public static boolean handleActionBar(Text text) {
+		if (config == null || !config.arcaneEnabled) {
+			if (DebugRecorder.isRecording()) DebugRecorder.recordArcaneDecision("result=PASS reason=ARCANE_DISABLED");
+			return false;
+		}
 		String raw = text.getString();
 		boolean shieldEquipped = shieldEquipped();
 		Matcher shieldPrefix = SHIELD_BAR_PREFIX.matcher(raw);
 		boolean shieldBar = shieldEquipped && (raw.isBlank() || shieldPrefix.find());
 		String cleaned = shieldBar ? SHIELD_BAR_PREFIX.matcher(raw).replaceFirst("").trim() : raw;
-		if (shieldBar && cleaned.isEmpty()) return true;
+		if (shieldBar && cleaned.isEmpty()) {
+			if (DebugRecorder.isRecording()) DebugRecorder.recordArcaneDecision("result=CANCEL reason=SHIELD_ONLY raw=\"" + raw + "\"");
+			return true;
+		}
 		ArcaneCooldownParser.Result parsed = ArcaneCooldownParser.parse(cleaned);
-		if (parsed.values().isEmpty()) return false;
+		if (parsed.values().isEmpty()) {
+			if (customModeActive() && isArcaneInputHintOnly(cleaned)) {
+				if (DebugRecorder.isRecording()) DebugRecorder.recordArcaneDecision(
+						"result=CANCEL reason=LEGACY_INPUT_HINT raw=\"" + raw + "\"");
+				return true;
+			}
+			if (DebugRecorder.isRecording()) DebugRecorder.recordArcaneDecision("result=PASS reason=FORMAT_NOT_MATCHED raw=\"" + raw
+					+ "\" cleaned=\"" + cleaned + "\" codePoints=" + DebugRecorder.codePoints(cleaned));
+			return false;
+		}
 		long now = System.nanoTime();
 		Set<String> seen = new HashSet<>();
-		for (ArcaneCooldownParser.Value value : parsed.values()) {
-			seen.add(value.name());
-			Cooldown old = cooldowns.get(value.name());
-			if (old == null || value.remaining() > old.remainingAt(now) + 0.35) {
-				double total = Math.ceil((value.remaining() + 0.05) * 5.0) / 5.0;
-				cooldowns.put(value.name(), new Cooldown(value.name(), value.remaining(), Math.max(total, 0.2), now, cooldowns.size()));
-			} else {
-				old.update(value.remaining(), now);
+		synchronized (cooldowns) {
+			for (ArcaneCooldownParser.Value value : parsed.values()) {
+				seen.add(value.name());
+				Cooldown old = cooldowns.get(value.name());
+				if (old == null || value.remaining() > old.remainingAt(now) + 0.35) {
+					double total = Math.ceil((value.remaining() + 0.05) * 5.0) / 5.0;
+					cooldowns.put(value.name(), new Cooldown(value.name(), value.remaining(), Math.max(total, 0.2), now, cooldowns.size()));
+				} else {
+					old.update(value.remaining(), now);
+				}
+			}
+			for (Cooldown value : cooldowns.values()) {
+				if (!seen.contains(value.name) && value.exitStarted == 0L) value.exitStarted = now;
 			}
 		}
-		for (Cooldown value : cooldowns.values()) {
-			if (!seen.contains(value.name) && value.exitStarted == 0L) value.exitStarted = now;
-		}
 		if (!customModeActive()) {
+			if (DebugRecorder.isRecording()) DebugRecorder.recordArcaneDecision("result=PASS reason=VANILLA_MODE matched=" + parsed.values().size()
+					+ " shield=" + shieldBar + " values=" + parsed.values());
 			if (shieldBar) {
 				MinecraftClient.getInstance().inGameHud.setOverlayMessage(Text.literal(cleaned), false);
 				return true;
 			}
 			return false;
 		}
-		String residual = parsed.residual();
+		String residual = stripArcaneInputHints(parsed.residual());
 		if (!residual.isEmpty()) {
 			MinecraftClient.getInstance().inGameHud.setOverlayMessage(Text.literal(residual), false);
 		}
+		if (DebugRecorder.isRecording()) DebugRecorder.recordArcaneDecision("result=CANCEL reason=SIMES_HUD matched=" + parsed.values().size()
+				+ " shield=" + shieldBar + " residual=\"" + residual + "\" values=" + parsed.values()
+				+ " cooldownCount=" + cooldowns.size());
 		return true;
+	}
+
+	static boolean isArcaneInputHintOnly(String value) {
+		return value != null && ARCANE_INPUT_HINT_ONLY.matcher(value).matches();
+	}
+
+	static String stripArcaneInputHints(String value) {
+		if (value == null || value.isBlank()) return "";
+		return ARCANE_INPUT_HINT.matcher(value).replaceAll(" ").trim().replaceAll("\\s{2,}", " ");
 	}
 
 	private static boolean shieldEquipped() {
@@ -130,13 +173,14 @@ public final class ArcaneCooldownHud {
 	}
 
 	private static void finish(String name) {
-		Cooldown value = cooldowns.get(name);
-		if (value != null && value.exitStarted == 0L) value.exitStarted = System.nanoTime();
+		synchronized (cooldowns) {
+			Cooldown value = cooldowns.get(name);
+			if (value != null && value.exitStarted == 0L) value.exitStarted = System.nanoTime();
+		}
 	}
 
 	private static boolean customModeActive() {
-		return config != null && config.simesMode && SimesClient.marketDataManager() != null
-				&& SimesClient.marketDataManager().isActiveOnTargetServer();
+		return config != null && config.arcaneEnabled && config.simesMode;
 	}
 
 	private static int openSettings() {
@@ -146,56 +190,126 @@ public final class ArcaneCooldownHud {
 	}
 
 	private static void cleanup() {
-		long now = System.nanoTime();
-		for (Cooldown value : cooldowns.values()) {
-			if (value.exitStarted == 0L && value.remainingAt(now) <= 0.05) value.exitStarted = now;
+		synchronized (cooldowns) {
+			if (cooldowns.isEmpty()) return;
+			long now = System.nanoTime();
+			for (Cooldown value : cooldowns.values()) {
+				if (value.exitStarted == 0L && value.remainingAt(now) <= 0.05) value.exitStarted = now;
+			}
+			cooldowns.values().removeIf(value -> value.exitStarted != 0L && now - value.exitStarted > 250_000_000L);
 		}
-		cooldowns.values().removeIf(value -> value.exitStarted != 0L && now - value.exitStarted > 250_000_000L);
+	}
+
+	private static List<Cooldown> cooldownSnapshot() {
+		synchronized (cooldowns) {
+			return new ArrayList<>(cooldowns.values());
+		}
+	}
+
+	private static void updateEquippedArcanes(MinecraftClient client) {
+		ItemStack stack = client.player == null ? ItemStack.EMPTY : client.player.getMainHandStack();
+		if (!ManaHud.isArcaneCodex(stack)) {
+			wandHeld = false;
+			lastWandIdentity = 0;
+			lastWandComponentsHash = 0;
+			equippedArcanes = List.of();
+			return;
+		}
+		wandHeld = true;
+		int stackIdentity = System.identityHashCode(stack);
+		int componentsHash = stack.getComponents().hashCode();
+		if (stackIdentity == lastWandIdentity && componentsHash == lastWandComponentsHash) return;
+		lastWandIdentity = stackIdentity;
+		lastWandComponentsHash = componentsHash;
+
+		List<String> detected = extractEquippedArcanes(stack);
+		if (!detected.isEmpty()) equippedArcanes = List.copyOf(detected);
+	}
+
+	/**
+	 * The server stores the three equipped spells in three ordered lore rows:
+	 * left click, Shift, right click. Read those rows directly instead of scanning
+	 * the complete component serialization, whose custom-name section changes to
+	 * the most recently cast spell and can therefore reorder the HUD.
+	 */
+	private static List<String> extractEquippedArcanes(ItemStack stack) {
+		LoreComponent lore = stack.get(DataComponentTypes.LORE);
+		if (lore == null) return List.of();
+		List<String> detected = new ArrayList<>(3);
+		for (Text line : lore.lines()) {
+			String plain = line.getString();
+			String matched = arcaneNameIn(plain);
+			if (matched != null && !detected.contains(matched)) {
+				detected.add(matched);
+				if (detected.size() == 3) break;
+			}
+		}
+		return detected;
+	}
+
+	private static String arcaneNameIn(String text) {
+		for (String name : ARCANE_ICONS.keySet()) {
+			if (text.contains(name)) return name;
+		}
+		return null;
 	}
 
 	private static void render(DrawContext context, net.minecraft.client.render.RenderTickCounter tickCounter) {
-		if (!customModeActive() || cooldowns.isEmpty()) return;
+		if (!customModeActive()) {
+			if (DebugRecorder.isRecording()) DebugRecorder.recordArcaneRender("result=SKIP reason=MODE_DISABLED");
+			return;
+		}
+		if (!wandHeld || equippedArcanes.isEmpty()) {
+			if (DebugRecorder.isRecording()) DebugRecorder.recordArcaneRender("result=SKIP reason=NO_WAND_ARCANES");
+			return;
+		}
 		MinecraftClient client = MinecraftClient.getInstance();
 		int width = client.getWindow().getScaledWidth();
 		int height = client.getWindow().getScaledHeight();
 		int baseX = configuredX(width);
 		int baseY = configuredY(height);
-		renderRows(context, baseX, baseY, config.scalePercent / 100.0f, false, System.nanoTime());
+		if (DebugRecorder.isRecording()) {
+			DebugRecorder.recordArcaneRender("result=RENDERED entries=" + cooldowns.size()
+					+ " position=" + baseX + "," + baseY + " scale=" + config.scalePercent
+					+ " hudHidden=" + client.options.hudHidden);
+		}
+		renderRows(context, baseX, baseY, config.scalePercent / 100.0f,
+				System.nanoTime(), List.copyOf(equippedArcanes), false);
 	}
 
 	static void renderPreview(DrawContext context, int x, int y, float scale) {
-		long now = System.nanoTime();
-		List<Cooldown> previous = new ArrayList<>(cooldowns.values());
-		cooldowns.clear();
-		cooldowns.put("治愈术", new Cooldown("治愈术", 42.0, 45.0, now, 0));
-		cooldowns.put("火球术", new Cooldown("火球术", 1.2, 2.0, now, 1));
-		cooldowns.put("雷电射线", new Cooldown("雷电射线", 0.6, 1.6, now, 2));
-		renderRows(context, x, y, scale, true, now);
-		cooldowns.clear();
-		for (Cooldown value : previous) cooldowns.put(value.name, value);
+		renderRows(context, x, y, scale, System.nanoTime(),
+				List.of("治愈术", "火球术", "雷电射线"), true);
 	}
 
-	private static void renderRows(DrawContext context, int x, int baseY, float scale, boolean preview, long now) {
+	private static void renderRows(DrawContext context, int x, int baseY, float scale,
+			long now, List<String> rows, boolean preview) {
 		MinecraftClient client = MinecraftClient.getInstance();
 		context.getMatrices().pushMatrix();
 		context.getMatrices().scale(scale, scale);
 		int sx = Math.round(x / scale);
 		int sy = Math.round(baseY / scale);
-		int index = 0;
-		for (Cooldown value : cooldowns.values()) {
-			double remaining = preview ? value.serverRemaining : Math.max(0.0, value.remainingAt(now));
-			float alpha = value.alpha(now);
-			int rowY = sy - Math.round(value.visualIndex(now, index) * ROW_HEIGHT);
-			int slide = Math.round((1.0f - alpha) * 10.0f);
-			drawRow(context, client, sx + slide, rowY, value.name, remaining, value.total, alpha);
-			index++;
+		for (int index = 0; index < rows.size(); index++) {
+			String name = rows.get(index);
+			Cooldown value;
+			synchronized (cooldowns) { value = cooldowns.get(name); }
+			double remaining = preview ? (index == 0 ? 0.0 : index == 1 ? 1.2 : 0.6)
+					: value == null ? 0.0 : Math.max(0.0, value.remainingAt(now));
+			double total = preview ? (index == 0 ? 1.0 : index == 1 ? 2.0 : 1.6)
+					: value == null ? 1.0 : value.total;
+			// baseY remains the bottom anchor used by existing configs, while the
+			// equipped order is rendered top-to-bottom (slot 1, slot 2, slot 3).
+			int rowY = sy - (rows.size() - 1 - index) * ROW_HEIGHT;
+			float barAlpha = preview ? (index == 0 ? 0.0f : 1.0f)
+					: value == null ? 0.0f : value.alpha(now);
+			drawRow(context, client, sx, rowY, name, remaining, total, barAlpha);
 		}
 		context.getMatrices().popMatrix();
 	}
 
 	private static void drawRow(DrawContext context, MinecraftClient client, int x, int y,
-			String name, double remaining, double total, float alpha) {
-		int a = Math.max(0, Math.min(255, Math.round(alpha * 255)));
+			String name, double remaining, double total, float barAlpha) {
+		int a = Math.max(0, Math.min(255, Math.round(barAlpha * 255)));
 		int barX = x + ICON_SLOT + 3 + NAME_WIDTH + 4;
 		int barY = y - 14;
 		int color = ArcaneColors.forName(name).primary();
@@ -203,17 +317,21 @@ public final class ArcaneCooldownHud {
 				0.0f, 0.0f, ICON_SLOT, ICON_SLOT, 32, 32, 32, 32);
 		String shownName = trimName(client, name, NAME_WIDTH);
 		Text coloredName = Text.literal(shownName).styled(style -> style.withBold(true).withColor(color));
-		context.drawTextWithShadow(client.textRenderer, coloredName, x + ICON_SLOT + 3, y - 12, (a << 24) | 0xFFFFFF);
-		context.fill(barX, barY, barX + BAR_WIDTH, barY + 12, (a << 24) | 0x111111);
-		context.fill(barX + 1, barY + 1, barX + BAR_WIDTH - 1, barY + 11, (a << 24) | 0x555555);
-		context.fill(barX + 3, barY + 3, barX + BAR_WIDTH - 3, barY + 9, (a << 24) | 0x241A12);
-		int inner = BAR_WIDTH - 6;
-		int fill = Math.max(0, Math.min(inner, (int)Math.round(inner * remaining / Math.max(total, 0.1))));
-		if (fill > 0) context.fill(barX + 3, barY + 3, barX + 3 + fill, barY + 9, (a << 24) | (color & 0xFFFFFF));
-		String time = remaining >= 10.0 ? String.format(Locale.ROOT, "%.0fs", Math.ceil(remaining))
-				: String.format(Locale.ROOT, "%.1fs", remaining);
-		int tx = barX + (BAR_WIDTH - client.textRenderer.getWidth(time)) / 2;
-		context.drawTextWithShadow(client.textRenderer, time, tx, barY + 2, (a << 24) | 0xFFFFFF);
+		context.drawText(client.textRenderer, coloredName, x + ICON_SLOT + 3, y - 12, 0xFFFFFFFF, false);
+		if (a > 0) {
+			context.fill(barX, barY, barX + BAR_WIDTH, barY + 12, (a << 24) | 0x111111);
+			context.fill(barX + 1, barY + 1, barX + BAR_WIDTH - 1, barY + 11, (a << 24) | 0x555555);
+			context.fill(barX + 3, barY + 3, barX + BAR_WIDTH - 3, barY + 9, (a << 24) | 0x241A12);
+			int inner = BAR_WIDTH - 6;
+			int fill = Math.max(0, Math.min(inner, (int)Math.round(inner * remaining / Math.max(total, 0.1))));
+			if (fill > 0) context.fill(barX + 3, barY + 3, barX + 3 + fill, barY + 9, (a << 24) | (color & 0xFFFFFF));
+			if (remaining > 0.05) {
+				String time = remaining >= 10.0 ? String.format(Locale.ROOT, "%.0fs", Math.ceil(remaining))
+						: String.format(Locale.ROOT, "%.1fs", remaining);
+				int tx = barX + (BAR_WIDTH - client.textRenderer.getWidth(time)) / 2;
+				context.drawTextWithShadow(client.textRenderer, time, tx, barY + 2, (a << 24) | 0xFFFFFF);
+			}
+		}
 	}
 
 	private static String trimName(MinecraftClient client, String name, int width) {
@@ -230,6 +348,10 @@ public final class ArcaneCooldownHud {
 	}
 
 	public static ArcaneHudConfig config() { return config; }
+	public static Text settingsKeyText() {
+		return settingsKey == null ? Text.literal("O") : settingsKey.getBoundKeyLocalizedText();
+	}
+	public static KeyBinding settingsKeyBinding() { return settingsKey; }
 	static int totalWidth() { return TOTAL_WIDTH; }
 	static int configuredX(int width) { return config.x < 0 ? width / 2 - 91 : (int)Math.round(config.x * width); }
 	static int configuredY(int height) { return config.y < 0 ? height - 55 : (int)Math.round(config.y * height); }

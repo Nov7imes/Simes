@@ -1,21 +1,66 @@
-MIT License
+Simes Source-Available License 1.0
 
-Copyright (c) 2026 7imes and Codex
+Copyright (c) 2026 7imes. All rights reserved.
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+This license applies to the Simes source code, binaries, documentation, and
+original assets, except for components that are explicitly distributed under
+a separate license.
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+1. Permission
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+You may:
+
+- download and use an official, unmodified Simes binary for personal,
+  non-commercial gameplay;
+- inspect the published source code for learning, security review, and
+  interoperability research;
+- make private backup copies for your own use.
+
+2. Restrictions
+
+Without prior written permission from 7imes, you may not:
+
+- redistribute Simes, modified or unmodified, in source or binary form;
+- publish, sublicense, sell, rent, monetize, or commercially exploit Simes;
+- publish derivative works or use substantial portions of Simes in another
+  project;
+- remove or alter copyright, authorship, attribution, or license notices;
+- represent Simes or a derivative work as your own work;
+- use the Simes name, logo, or project identity to imply endorsement.
+
+3. Modpacks and mirrors
+
+Including Simes in a modpack, launcher, mirror, or other redistribution
+requires prior written permission. Linking users to the official GitHub or
+Modrinth download page does not require permission.
+
+4. Contributions
+
+Unless a separate written agreement states otherwise, contributions submitted
+to the official Simes repository grant 7imes a perpetual, worldwide,
+royalty-free right to use, modify, relicense, and distribute the contribution
+as part of Simes.
+
+5. Separate components
+
+Third-party or separately licensed components remain governed by their own
+licenses. In particular, the bundled AutoMessage component remains available
+under CC0-1.0 as stated in LICENSE_automessage. This license does not revoke or
+restrict rights already granted under those separate licenses.
+
+6. No warranty
+
+SIMES IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+INCLUDING BUT NOT LIMITED TO WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+PARTICULAR PURPOSE, AND NON-INFRINGEMENT. IN NO EVENT SHALL THE COPYRIGHT
+HOLDER BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY ARISING FROM THE
+SOFTWARE OR ITS USE.
+
+7. Termination
+
+Any permission granted by this license terminates automatically if you violate
+its terms. Sections concerning restrictions, ownership, warranty, and
+liability survive termination.
+
+For permissions beyond this license, contact 7imes through the official Simes
+repository: https://github.com/Nov7imes/Simes

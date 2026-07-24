@@ -25,7 +25,7 @@ public final class MarketTooltip {
 
 	public static void register(MarketDataManager dataManager) {
 		ItemTooltipCallback.EVENT.register((stack, context, type, lines) -> {
-			if (!dataManager.isActiveOnTargetServer() || stack.isEmpty()) {
+			if (!SimesConfig.get().marketTooltipEnabled || !dataManager.isActiveOnTargetServer() || stack.isEmpty()) {
 				return;
 			}
 

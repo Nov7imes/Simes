@@ -4,8 +4,10 @@
   "compatibilityLevel": "JAVA_21",
   "client": [
     "ClientPlayNetworkHandlerMixin",
+    "ClientCommonNetworkHandlerMixin",
     "HandledScreenAccessor",
-    "HandledScreenMixin"
+    "HandledScreenMixin",
+    "XaeroMapRegionMixin"
   ],
   "injectors": {
     "defaultRequire": 1
